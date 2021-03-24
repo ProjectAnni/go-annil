@@ -20,6 +20,7 @@ func Init() error {
 	be = b
 
 	regAnniEndpoints(r)
+	regUserEndpoints(r)
 
 	return r.Run(config.Cfg.Listen)
 }
