@@ -22,6 +22,10 @@ func Init() error {
 	if err != nil {
 		return err
 	}
+	_, err = db.Exec("INSERT INTO Users(Username, Password, `Admin`) SELECT \"Admin\", \"12345\", 1 WHERE NOT EXISTS(SELECT * FROM Users)")
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
