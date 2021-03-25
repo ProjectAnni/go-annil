@@ -72,6 +72,7 @@ func regAnniEndpoints(r *gin.Engine) {
 }
 
 func getAlbumList(ctx *gin.Context) {
+	ctx.Header("Access-Control-Allow-Origin", "*")
 	ctx.JSON(http.StatusOK, be.ListCatalogs())
 }
 
@@ -102,6 +103,8 @@ func getAudio(ctx *gin.Context, catalog, trackStr string) {
 		ctx.Header("Content-Type", "audio/mp3")
 	}
 
+	ctx.Header("Access-Control-Allow-Origin", "*")
+
 	ctx.Stream(func(w io.Writer) bool {
 		defer aud.Close()
 		_, err := io.Copy(w, aud)
@@ -125,6 +128,9 @@ func getCover(ctx *gin.Context, catalog string) {
 		ctx.Status(http.StatusNotFound)
 		return
 	}
+
+	ctx.Header("Access-Control-Allow-Origin", "*")
+
 	ctx.Stream(func(w io.Writer) bool {
 		defer cov.Close()
 		_, err := io.Copy(w, cov)
