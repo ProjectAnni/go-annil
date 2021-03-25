@@ -2,6 +2,7 @@ package http
 
 import (
 	"github.com/SeraphJACK/go-annil/storage"
+	"github.com/SeraphJACK/go-annil/token"
 	"github.com/gin-gonic/gin"
 	uuid "github.com/satori/go.uuid"
 	"log"
@@ -175,7 +176,16 @@ func regUserEndpoints(r *gin.Engine) {
 		}
 	})
 	r.POST("/api/generateToken", func(ctx *gin.Context) {
-		// TODO
+		username := ""
+		if authorize(ctx, &username) {
+			tok, err := token.GenerateUserToken(username)
+			if err != nil {
+				log.Printf("Failed to generate user token for %s: %v\n", username, err)
+				ctx.Status(http.StatusInternalServerError)
+			} else {
+				ctx.String(http.StatusOK, tok)
+			}
+		}
 	})
 }
 

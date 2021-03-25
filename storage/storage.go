@@ -22,6 +22,7 @@ func Init() error {
 	if err != nil {
 		return err
 	}
+	// If there are no users, add a default admin account
 	_, err = db.Exec("INSERT INTO Users(Username, Password, `Admin`) SELECT \"Admin\", \"12345\", 1 WHERE NOT EXISTS(SELECT * FROM Users)")
 	if err != nil {
 		return err
