@@ -2,10 +2,14 @@ package http
 
 import (
 	"encoding/json"
+	"github.com/SeraphJACK/go-annil/backend"
+	"github.com/SeraphJACK/go-annil/storage"
 	"github.com/SeraphJACK/go-annil/token"
 	"github.com/gin-gonic/gin"
+	"io"
 	"log"
 	"net/http"
+	"strconv"
 	"time"
 )
 
@@ -26,6 +30,10 @@ func regAnniEndpoints(r *gin.Engine) {
 			ctx.Status(http.StatusUnauthorized)
 			return
 		}
+		if !storage.AllowShare(username) {
+			ctx.Status(http.StatusForbidden)
+			return
+		}
 		defer ctx.Request.Body.Close()
 		var payload CreateSharePayload
 		err = json.NewDecoder(ctx.Request.Body).Decode(&payload)
@@ -41,5 +49,54 @@ func regAnniEndpoints(r *gin.Engine) {
 			ctx.Header("Content-Type", "text/plain")
 			ctx.String(http.StatusOK, sTok)
 		}
+	})
+
+	r.GET("/:catalog/:track", func(ctx *gin.Context) {
+		catalog := ctx.Param("catalog")
+		track, err := strconv.Atoi(ctx.Param("track"))
+		if err != nil || track < 0 || track > 255 {
+			ctx.Status(http.StatusBadRequest)
+			return
+		}
+		tok := ctx.GetHeader("Authorization")
+		if !token.CheckAudioPerms(tok, catalog, uint8(track)) {
+			ctx.Status(http.StatusForbidden)
+			return
+		}
+		typ, aud, err := be.GetAudio(catalog, uint8(track))
+		if err != nil {
+			ctx.Status(http.StatusNotFound)
+			return
+		}
+		if typ == backend.FLAC {
+			ctx.Header("Content-Type", "audio/flac")
+		} else if typ == backend.MP3 {
+			ctx.Header("Content-Type", "audio/mp3")
+		}
+
+		ctx.Stream(func(w io.Writer) bool {
+			defer aud.Close()
+			_, err := io.Copy(w, aud)
+			return err != nil
+		})
+	})
+
+	r.GET("/:catalog/cover", func(ctx *gin.Context) {
+		catalog := ctx.Param("catalog")
+		tok := ctx.GetHeader("Authorization")
+		if !token.CheckCoverPerms(tok, catalog) {
+			ctx.Status(http.StatusForbidden)
+			return
+		}
+		cov, err := be.GetCover(catalog)
+		if err != nil {
+			ctx.Status(http.StatusNotFound)
+			return
+		}
+		ctx.Stream(func(w io.Writer) bool {
+			defer cov.Close()
+			_, err := io.Copy(w, cov)
+			return err != nil
+		})
 	})
 }

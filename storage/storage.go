@@ -17,7 +17,6 @@ func Init() error {
 	if err != nil {
 		return err
 	}
-	// TODO
 	_, err = db.Exec("CREATE TABLE IF NOT EXISTS Users (\n    `Username` varchar(64) NOT NULL,\n    `AllowShare` int NOT NULL DEFAULT 0,\n    `RegisterTime` datetime NOT NULL DEFAULT (DATETIME('now')),\n    `Password` varchar(64) NOT NULL,\n    `Admin` int NOT NULL DEFAULT 0,\n    PRIMARY KEY (`Username`)\n)")
 	if err != nil {
 		return err
