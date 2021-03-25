@@ -15,8 +15,8 @@ import (
 )
 
 type CreateSharePayload struct {
-	Audios map[string][]uint8 `json:"audios"`
-	Expire uint               `json:"expire"`
+	Audios map[string][]int `json:"audios"`
+	Expire uint             `json:"expire"`
 }
 
 func regAnniEndpoints(r *gin.Engine) {
@@ -58,13 +58,12 @@ func regAnniEndpoints(r *gin.Engine) {
 				ctx.Status(http.StatusNotFound)
 				return
 			}
-			ctx.Set("catalog", endpoint[:strings.Index(endpoint[1:], "/")-1])
+			catalog := endpoint[1 : strings.Index(endpoint[1:], "/")+1]
 			third := endpoint[strings.LastIndex(endpoint, "/")+1:]
 			if third == "cover" {
-				getCover(ctx)
+				getCover(ctx, catalog)
 			} else {
-				ctx.Set("track", third)
-				getAudio(ctx)
+				getAudio(ctx, catalog, third)
 			}
 		}
 	})
@@ -76,15 +75,14 @@ func getAlbumList(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, be.ListCatalogs())
 }
 
-func getAudio(ctx *gin.Context) {
-	catalog := ctx.Param("catalog")
-	track, err := strconv.Atoi(ctx.Param("track"))
+func getAudio(ctx *gin.Context, catalog, trackStr string) {
+	track, err := strconv.Atoi(trackStr)
 	if err != nil || track < 0 || track > 255 {
 		ctx.Status(http.StatusBadRequest)
 		return
 	}
 	tok := ctx.GetHeader("Authorization")
-	if !token.CheckAudioPerms(tok, catalog, uint8(track)) {
+	if !token.CheckAudioPerms(tok, catalog, track) {
 		ctx.Status(http.StatusForbidden)
 		return
 	}
@@ -106,8 +104,7 @@ func getAudio(ctx *gin.Context) {
 	})
 }
 
-func getCover(ctx *gin.Context) {
-	catalog := ctx.Param("catalog")
+func getCover(ctx *gin.Context, catalog string) {
 	tok := ctx.GetHeader("Authorization")
 	if !token.CheckCoverPerms(tok, catalog) {
 		ctx.Status(http.StatusForbidden)

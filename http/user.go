@@ -42,7 +42,7 @@ func regUserEndpoints(r *gin.Engine) {
 				username: username,
 				expire:   time.Now().Add(time.Hour),
 			}
-			ctx.SetCookie("sessionId", sid, 0, "/", "", true, true)
+			ctx.SetCookie("sessionId", sid, 0, "/", "", false, true)
 			ctx.Status(http.StatusOK)
 		} else {
 			ctx.Status(http.StatusUnauthorized)
@@ -190,7 +190,12 @@ func regUserEndpoints(r *gin.Engine) {
 }
 
 func authorize(ctx *gin.Context, u *string) bool {
-	s, ok := sessions[ctx.GetHeader("Authorization")]
+	sid, err := ctx.Cookie("sessionId")
+	if err != nil {
+		ctx.Status(http.StatusUnauthorized)
+		return false
+	}
+	s, ok := sessions[sid]
 	if ok {
 		if time.Now().After(s.expire) {
 			ctx.Status(http.StatusUnauthorized)

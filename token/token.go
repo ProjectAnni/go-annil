@@ -21,7 +21,7 @@ func GenerateUserToken(username string) (string, error) {
 	return token.SignedString([]byte(config.Cfg.Secret))
 }
 
-func GenerateShareToken(username string, audios map[string][]uint8, exp time.Duration) (string, error) {
+func GenerateShareToken(username string, audios map[string][]int, exp time.Duration) (string, error) {
 	token := jwt.New(jwt.SigningMethodHS256)
 	claims := make(jwt.MapClaims)
 
@@ -31,6 +31,7 @@ func GenerateShareToken(username string, audios map[string][]uint8, exp time.Dur
 	}
 	claims["username"] = username
 	claims["audios"] = audios
+	claims["type"] = "share"
 
 	token.Claims = claims
 	return token.SignedString([]byte(config.Cfg.Secret))
@@ -55,10 +56,7 @@ func ValidateUserToken(token string) (string, error) {
 	if !ok {
 		return "", fmt.Errorf("failed to parse claims")
 	}
-	iat, ok := claims["iat"].(int64)
-	if !ok {
-		return "", fmt.Errorf("failed to parse claims")
-	}
+	iat := int64(claims["iat"].(float64))
 	date, err := storage.RegisterDate(username)
 	if err != nil {
 		return "", err
@@ -73,7 +71,7 @@ func ValidateUserToken(token string) (string, error) {
 	return username, nil
 }
 
-func ValidateShareToken(token string) (map[string][]uint8, error) {
+func ValidateShareToken(token string) (map[string][]int, error) {
 	t, err := jwt.Parse(token, func(token *jwt.Token) (interface{}, error) {
 		alg, ok := token.Method.(*jwt.SigningMethodHMAC)
 		if !ok || alg != jwt.SigningMethodHS256 {
@@ -89,10 +87,7 @@ func ValidateShareToken(token string) (map[string][]uint8, error) {
 		return nil, fmt.Errorf("failed to parse claims")
 	}
 
-	iat, ok := claims["iat"].(int64)
-	if !ok {
-		return nil, fmt.Errorf("failed to parse claims")
-	}
+	iat := int64(claims["iat"].(float64))
 
 	username, ok := claims["username"].(string)
 	if !ok {
@@ -113,12 +108,12 @@ func ValidateShareToken(token string) (map[string][]uint8, error) {
 		return nil, fmt.Errorf("invalid type")
 	}
 
-	audios, ok := claims["audios"].(map[string][]uint8)
+	audios, ok := claims["audios"].(map[string]interface{})
 	if !ok {
 		return nil, fmt.Errorf("failed to parse claims")
 	}
 
-	return audios, nil
+	return parseAudios(audios), nil
 }
 
 func CheckCoverPerms(token, catalog string) bool {
@@ -136,7 +131,7 @@ func CheckCoverPerms(token, catalog string) bool {
 	}
 }
 
-func CheckAudioPerms(token, catalog string, track uint8) bool {
+func CheckAudioPerms(token, catalog string, track int) bool {
 	_, err := ValidateUserToken(token)
 	if err != nil {
 		audios, err := ValidateShareToken(token)
@@ -154,11 +149,33 @@ func CheckAudioPerms(token, catalog string, track uint8) bool {
 	}
 }
 
-func contains(arr []uint8, el uint8) bool {
+func contains(arr []int, el int) bool {
 	for _, e := range arr {
 		if e == el {
 			return true
 		}
 	}
 	return false
+}
+
+func parseAudios(e map[string]interface{}) map[string][]int {
+	ret := make(map[string][]int)
+
+	for k, v := range e {
+		ar, ok := v.([]interface{})
+		if !ok {
+			return ret
+		}
+		arr := make([]int, 0)
+		for _, va := range ar {
+			track, ok := va.(float64)
+			if !ok {
+				return ret
+			}
+			arr = append(arr, int(track))
+		}
+		ret[k] = arr
+	}
+
+	return ret
 }

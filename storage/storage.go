@@ -3,6 +3,7 @@ package storage
 import (
 	"database/sql"
 	"encoding/hex"
+	"fmt"
 	_ "github.com/mattn/go-sqlite3"
 	"golang.org/x/crypto/bcrypt"
 	"log"
@@ -22,7 +23,8 @@ func Init() error {
 		return err
 	}
 	// If there are no users, add a default admin account
-	_, err = db.Exec("INSERT INTO Users(Username, Password, `Admin`) SELECT \"Admin\", \"12345\", 1 WHERE NOT EXISTS(SELECT * FROM Users)")
+	// Default password is "12345"
+	_, err = db.Exec("INSERT INTO Users(Username, Password, `Admin`) SELECT \"Admin\", \"24326124313024645a41414b316b7045334557356c56587a7549537165754a773271676f555063794e754a49396e6c62566a35385a5142526b654f61\", 1 WHERE NOT EXISTS(SELECT * FROM Users)")
 	if err != nil {
 		return err
 	}
@@ -42,6 +44,8 @@ func Register(username, password string) error {
 }
 
 func CheckPassword(username, password string) bool {
+	h, _ := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	fmt.Println(hex.EncodeToString(h))
 	var hashed string
 	err := db.QueryRow("SELECT `Password` FROM Users WHERE Username=?", username).Scan(&hashed)
 	if err != nil {
