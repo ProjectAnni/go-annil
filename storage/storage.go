@@ -3,7 +3,6 @@ package storage
 import (
 	"database/sql"
 	"encoding/hex"
-	"fmt"
 	_ "github.com/mattn/go-sqlite3"
 	"golang.org/x/crypto/bcrypt"
 	"log"
@@ -44,8 +43,6 @@ func Register(username, password string) error {
 }
 
 func CheckPassword(username, password string) bool {
-	h, _ := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
-	fmt.Println(hex.EncodeToString(h))
 	var hashed string
 	err := db.QueryRow("SELECT `Password` FROM Users WHERE Username=?", username).Scan(&hashed)
 	if err != nil {
@@ -57,6 +54,15 @@ func CheckPassword(username, password string) bool {
 	}
 	err = bcrypt.CompareHashAndPassword(pwd, []byte(password))
 	return err == nil
+}
+
+func ChangePassword(username, password string) error {
+	h, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		return err
+	}
+	_, err = db.Exec("UPDATE Users SET Password=? WHERE Username=?", hex.EncodeToString(h), username)
+	return err
 }
 
 func RegisterDate(username string) (time.Time, error) {

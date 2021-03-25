@@ -175,6 +175,28 @@ func regUserEndpoints(r *gin.Engine) {
 			}
 		}
 	})
+	r.POST("/api/changePassword", func(ctx *gin.Context) {
+		username := ""
+		if authorize(ctx, &username) {
+			oldPass := ctx.PostForm("oldPassword")
+			newPass := ctx.PostForm("newPassword")
+			if !storage.CheckPassword(username, oldPass) {
+				ctx.Header("X-Status-Reason", "WRONG_OLD_PASSWORD")
+				ctx.Status(http.StatusForbidden)
+			}
+			if len(newPass) < 5 {
+				ctx.Header("X-Status-Reason", "PASSWORD_TOO_SHORT")
+				ctx.Status(http.StatusForbidden)
+			}
+			err := storage.ChangePassword(username, newPass)
+			if err != nil {
+				ctx.Status(http.StatusInternalServerError)
+				log.Printf("Failed to change password for %s: %v\n", username, err)
+			} else {
+				ctx.Status(http.StatusOK)
+			}
+		}
+	})
 	r.POST("/api/generateToken", func(ctx *gin.Context) {
 		username := ""
 		if authorize(ctx, &username) {
