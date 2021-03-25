@@ -116,36 +116,45 @@ func ValidateShareToken(token string) (map[string][]int, error) {
 	return parseAudios(audios), nil
 }
 
-func CheckCoverPerms(token, catalog string) bool {
+// return 0 for ok, 1 for no permission, 2 for authorization invalid
+func CheckCoverPerms(token, catalog string) uint8 {
 	_, err := ValidateUserToken(token)
 	if err != nil {
 		audios, err := ValidateShareToken(token)
 		if err != nil {
-			return false
+			return 2
 		} else {
 			_, exists := audios[catalog]
-			return exists
+			if exists {
+				return 0
+			} else {
+				return 1
+			}
 		}
 	} else {
-		return true
+		return 0
 	}
 }
 
-func CheckAudioPerms(token, catalog string, track int) bool {
+// return 0 for ok, 1 for no permission, 2 for authorization invalid
+func CheckAudioPerms(token, catalog string, track int) uint8 {
 	_, err := ValidateUserToken(token)
 	if err != nil {
 		audios, err := ValidateShareToken(token)
 		if err != nil {
-			return false
+			return 2
 		} else {
 			tracks, exists := audios[catalog]
 			if !exists {
-				return false
+				return 1
 			}
-			return contains(tracks, track)
+			if contains(tracks, track) {
+				return 0
+			}
+			return 1
 		}
 	} else {
-		return true
+		return 0
 	}
 }
 

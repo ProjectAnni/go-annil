@@ -82,8 +82,13 @@ func getAudio(ctx *gin.Context, catalog, trackStr string) {
 		return
 	}
 	tok := ctx.GetHeader("Authorization")
-	if !token.CheckAudioPerms(tok, catalog, track) {
-		ctx.Status(http.StatusForbidden)
+	check := token.CheckAudioPerms(tok, catalog, track)
+	if check != 0 {
+		if check == 1 {
+			ctx.Status(http.StatusForbidden)
+		} else {
+			ctx.Status(http.StatusUnauthorized)
+		}
 		return
 	}
 	typ, aud, err := be.GetAudio(catalog, uint8(track))
@@ -106,8 +111,13 @@ func getAudio(ctx *gin.Context, catalog, trackStr string) {
 
 func getCover(ctx *gin.Context, catalog string) {
 	tok := ctx.GetHeader("Authorization")
-	if !token.CheckCoverPerms(tok, catalog) {
-		ctx.Status(http.StatusForbidden)
+	check := token.CheckCoverPerms(tok, catalog)
+	if check != 0 {
+		if check == 1 {
+			ctx.Status(http.StatusForbidden)
+		} else {
+			ctx.Status(http.StatusUnauthorized)
+		}
 		return
 	}
 	cov, err := be.GetCover(catalog)
