@@ -1,3 +1,6 @@
 .idea
-# Debug database
+# Debug files
 data.db
+config.yml
+go-annil
+repo/

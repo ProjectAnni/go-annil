@@ -8,11 +8,9 @@ import (
 
 var r = gin.Default()
 
-// TODO
 var be backend.Backend
 
 func Init() error {
-	// TODO
 	b, err := backend.NewFileBackend(config.Cfg.RepoRoot)
 	if err != nil {
 		return err
