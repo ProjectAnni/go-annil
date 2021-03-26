@@ -109,5 +109,42 @@ func TestUser(t *testing.T) {
 		t.Errorf("wrong user exist")
 		t.Fail()
 	}
+	code, err := NewInviteCode(1)
+	if err != nil {
+		t.Errorf("failed to create invite code: %v", err)
+		t.FailNow()
+	}
+	if !ShrinkInviteCode(code) {
+		t.Errorf("wrong shrink invite code return value")
+		t.Fail()
+	}
+	if ShrinkInviteCode(code) {
+		t.Errorf("wrong shrink invite code return value")
+		t.Fail()
+	}
+
+	code, err = NewInviteCode(-1)
+	if err != nil {
+		t.Errorf("failed to create invite code: %v", err)
+		t.FailNow()
+	}
+	for i := 0; i < 100; i++ {
+		if !ShrinkInviteCode(code) {
+			t.Errorf("wrong shrink invite code return value")
+			t.Fail()
+		}
+	}
+	err = RevokeInviteCode(code)
+	if err != nil {
+		t.Errorf("failed to revoke invite code: %v", err)
+		t.FailNow()
+	}
+	for i := 0; i < 50; i++ {
+		_, _ = NewInviteCode(-1)
+	}
+	if len(ListInviteCodes()) != 50 {
+		t.Fail()
+	}
+
 	_ = os.Remove("data.db")
 }

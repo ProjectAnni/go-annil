@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"regexp"
+	"strconv"
 	"time"
 )
 
@@ -51,6 +52,7 @@ func regUserEndpoints(r *gin.Engine) {
 	r.POST("/api/register", func(ctx *gin.Context) {
 		username := ctx.PostForm("username")
 		password := ctx.PostForm("password")
+		code := ctx.PostForm("inviteCode")
 		if storage.UserExists(username) || !usernameExp.MatchString(username) {
 			ctx.Header("X-Status-Reason", "USERNAME_UNAVAILABLE")
 			ctx.Status(http.StatusConflict)
@@ -58,6 +60,11 @@ func regUserEndpoints(r *gin.Engine) {
 			ctx.Header("X-Status-Reason", "PASSWORD_TOO_SHORT")
 			ctx.Status(http.StatusForbidden)
 		} else {
+			if !storage.ShrinkInviteCode(code) {
+				ctx.Header("X-Status-Reason", "INVALID_INVITE_CODE")
+				ctx.Status(http.StatusForbidden)
+				return
+			}
 			err := storage.Register(ctx.PostForm("username"), ctx.PostForm("password"))
 			if err != nil {
 				ctx.Status(http.StatusInternalServerError)
@@ -225,6 +232,53 @@ func regUserEndpoints(r *gin.Engine) {
 		username := ""
 		if authorize(ctx, &username) {
 			ctx.String(http.StatusOK, username)
+		}
+	})
+
+	r.POST("/api/createInviteCode", func(ctx *gin.Context) {
+		username := ""
+		if authorize(ctx, &username) {
+			if !storage.IsAdmin(username) {
+				ctx.Status(http.StatusForbidden)
+				return
+			}
+			limit, err := strconv.Atoi(ctx.PostForm("limit"))
+			if err != nil || limit < -1 || limit == 0 {
+				ctx.Status(http.StatusBadRequest)
+				return
+			}
+			code, err := storage.NewInviteCode(limit)
+			if err != nil {
+				ctx.Status(http.StatusInternalServerError)
+				return
+			}
+			ctx.String(http.StatusOK, code)
+		}
+	})
+	r.POST("/api/listInviteCodes", func(ctx *gin.Context) {
+		username := ""
+		if authorize(ctx, &username) {
+			if !storage.IsAdmin(username) {
+				ctx.Status(http.StatusForbidden)
+				return
+			}
+			ctx.JSON(http.StatusOK, storage.ListInviteCodes())
+		}
+	})
+	r.POST("/api/revokeInviteCode", func(ctx *gin.Context) {
+		username := ""
+		if authorize(ctx, &username) {
+			if !storage.IsAdmin(username) {
+				ctx.Status(http.StatusForbidden)
+				return
+			}
+			code := ctx.PostForm("code")
+			err := storage.RevokeInviteCode(code)
+			if err != nil {
+				ctx.Status(http.StatusInternalServerError)
+			} else {
+				ctx.Status(http.StatusOK)
+			}
 		}
 	})
 }

@@ -3,7 +3,9 @@ package storage
 import (
 	"database/sql"
 	"encoding/hex"
+	"fmt"
 	_ "github.com/mattn/go-sqlite3"
+	uuid "github.com/satori/go.uuid"
 	"golang.org/x/crypto/bcrypt"
 	"log"
 	"time"
@@ -14,6 +16,12 @@ type User struct {
 	RegisterDate int64  `json:"registerTime"`
 	AllowShare   bool   `json:"allowShare"`
 	IsAdmin      bool   `json:"isAdmin"`
+}
+
+type InviteCode struct {
+	Code string `json:"code"`
+	// -1 indicates infinity
+	Limit string `json:"limit"`
 }
 
 var db *sql.DB
@@ -34,6 +42,7 @@ func Init() error {
 	if err != nil {
 		return err
 	}
+	_, err = db.Exec("CREATE TABLE IF NOT EXISTS InviteCodes(\n    `Code` varchar(64) NOT NULL,\n    `Limit` int NOT NULL DEFAULT 0,\n    PRIMARY KEY(`Code`)\n)")
 	return nil
 }
 
@@ -134,4 +143,51 @@ func ListUsers() []User {
 		ret = append(ret, u)
 	}
 	return ret
+}
+
+func NewInviteCode(limit int) (string, error) {
+	if limit == 0 {
+		return "", fmt.Errorf("invalid limit")
+	}
+	code := uuid.NewV4().String()
+	_, err := db.Exec("INSERT INTO InviteCodes(`Code`, `Limit`) VALUES (?,?)", code, limit)
+	if err != nil {
+		return "", err
+	}
+	return code, nil
+}
+
+func ListInviteCodes() []InviteCode {
+	ret := make([]InviteCode, 0)
+	rows, err := db.Query("SELECT Code, `Limit` FROM InviteCodes")
+	if err != nil {
+		return ret
+	}
+	for rows.Next() {
+		var r InviteCode
+		err = rows.Scan(&r.Code, &r.Limit)
+		if err != nil {
+			return ret
+		}
+		ret = append(ret, r)
+	}
+	return ret
+}
+
+func ShrinkInviteCode(code string) bool {
+	ok := false
+	err := db.QueryRow("SELECT EXISTS(SELECT * FROM InviteCodes WHERE Code=? AND (`Limit`>0 or `Limit`=-1))", code).Scan(&ok)
+	if err != nil {
+		return false
+	}
+	_, err = db.Exec("UPDATE InviteCodes SET `Limit`=`Limit`-1 WHERE Code=? AND `Limit`>0; DELETE FROM InviteCodes WHERE `Limit`=0", code)
+	if err != nil {
+		log.Printf("Failed to shrink invite code: %v", err)
+	}
+	return ok
+}
+
+func RevokeInviteCode(code string) error {
+	_, err := db.Exec("DELETE FROM InviteCodes WHERE Code=?", code)
+	return err
 }
