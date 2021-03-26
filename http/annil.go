@@ -55,15 +55,19 @@ func regAnniEndpoints(r *gin.Engine) {
 			getAlbumList(ctx)
 		} else {
 			if strings.Count(endpoint, "/") == 1 {
-				ctx.Status(http.StatusNotFound)
+				serveFrontend(ctx)
 				return
 			}
-			catalog := endpoint[1 : strings.Index(endpoint[1:], "/")+1]
+			second := endpoint[1 : strings.Index(endpoint[1:], "/")+1]
 			third := endpoint[strings.LastIndex(endpoint, "/")+1:]
+			if second == "assets" {
+				serveFrontend(ctx)
+				return
+			}
 			if third == "cover" {
-				getCover(ctx, catalog)
+				getCover(ctx, second)
 			} else {
-				getAudio(ctx, catalog, third)
+				getAudio(ctx, second, third)
 			}
 		}
 	})
