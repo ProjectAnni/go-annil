@@ -13,18 +13,18 @@ import (
 func main() {
 	err := config.Init()
 	if err != nil {
-		_, _ = fmt.Fprintf(os.Stderr, "Failed to read config: %v", err)
+		_, _ = fmt.Fprintf(os.Stderr, "Failed to read config: %v\n", err)
 		os.Exit(1)
 	}
 	err = storage.Init()
 	if err != nil {
-		_, _ = fmt.Fprintf(os.Stderr, "Failed to initialize database: %v", err)
+		_, _ = fmt.Fprintf(os.Stderr, "Failed to initialize database: %v\n", err)
 		os.Exit(1)
 	}
 	go func() {
 		err = http.Init()
 		if err != nil {
-			_, _ = fmt.Fprintf(os.Stderr, "Failed to start http server: %v", err)
+			_, _ = fmt.Fprintf(os.Stderr, "Failed to start http server: %v\n", err)
 			os.Exit(1)
 		}
 	}()

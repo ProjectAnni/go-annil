@@ -183,10 +183,12 @@ func regUserEndpoints(r *gin.Engine) {
 			if !storage.CheckPassword(username, oldPass) {
 				ctx.Header("X-Status-Reason", "WRONG_OLD_PASSWORD")
 				ctx.Status(http.StatusForbidden)
+				return
 			}
 			if len(newPass) < 5 {
 				ctx.Header("X-Status-Reason", "PASSWORD_TOO_SHORT")
 				ctx.Status(http.StatusForbidden)
+				return
 			}
 			err := storage.ChangePassword(username, newPass)
 			if err != nil {
@@ -219,6 +221,12 @@ func regUserEndpoints(r *gin.Engine) {
 			ctx.JSON(http.StatusOK, storage.ListUsers())
 		}
 	})
+	r.POST("/api/current", func(ctx *gin.Context) {
+		username := ""
+		if authorize(ctx, &username) {
+			ctx.String(http.StatusOK, username)
+		}
+	})
 }
 
 func authorize(ctx *gin.Context, u *string) bool {
@@ -233,6 +241,10 @@ func authorize(ctx *gin.Context, u *string) bool {
 			ctx.Status(http.StatusUnauthorized)
 			return false
 		} else {
+			if !storage.UserExists(s.username) {
+				ctx.Status(http.StatusUnauthorized)
+				return false
+			}
 			*u = s.username
 			return true
 		}
