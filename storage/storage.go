@@ -9,6 +9,13 @@ import (
 	"time"
 )
 
+type User struct {
+	Username     string `json:"username"`
+	RegisterDate int64  `json:"registerTime"`
+	AllowShare   bool   `json:"allowShare"`
+	IsAdmin      bool   `json:"isAdmin"`
+}
+
 var db *sql.DB
 
 func Init() error {
@@ -108,4 +115,23 @@ func SetAdmin(username string, admin bool) error {
 		log.Printf("Failed to set allow share for %s: %v\n", username, err)
 	}
 	return err
+}
+
+func ListUsers() []User {
+	ret := make([]User, 0)
+	rows, err := db.Query("SELECT Username,RegisterDate, AllowShare, IsAdmin FROM Users")
+	if err != nil {
+		return ret
+	}
+	for rows.Next() {
+		var u User
+		var t time.Time
+		err = rows.Scan(&u.Username, &t, &u.AllowShare, &u.IsAdmin)
+		if err != nil {
+			return ret
+		}
+		u.RegisterDate = t.Unix()
+		ret = append(ret, u)
+	}
+	return ret
 }

@@ -209,6 +209,16 @@ func regUserEndpoints(r *gin.Engine) {
 			}
 		}
 	})
+	r.POST("/api/listUsers", func(ctx *gin.Context) {
+		username := ""
+		if authorize(ctx, &username) {
+			if !storage.IsAdmin(username) {
+				ctx.Status(http.StatusForbidden)
+				return
+			}
+			ctx.JSON(http.StatusOK, storage.ListUsers())
+		}
+	})
 }
 
 func authorize(ctx *gin.Context, u *string) bool {
