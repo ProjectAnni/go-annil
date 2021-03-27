@@ -1,6 +1,7 @@
 package token
 
 import (
+	"errors"
 	"fmt"
 	"github.com/SeraphJACK/go-annil/config"
 	"github.com/SeraphJACK/go-annil/storage"
@@ -57,6 +58,9 @@ func ValidateUserToken(token string) (string, error) {
 		return "", fmt.Errorf("failed to parse claims")
 	}
 	iat := int64(claims["iat"].(float64))
+	if !storage.UserExists(username) {
+		return "", errors.New("user not exist")
+	}
 	date, err := storage.RegisterDate(username)
 	if err != nil {
 		return "", err
