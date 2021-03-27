@@ -71,6 +71,13 @@ func regAnniEndpoints(r *gin.Engine) {
 			}
 		}
 	})
+
+	r.OPTIONS("/share", func(ctx *gin.Context) {
+		if !strings.HasPrefix(ctx.Request.RequestURI, "/api") {
+			ctx.Header("Access-Control-Allow-Origin", "*")
+		}
+		ctx.Status(http.StatusOK)
+	})
 	// r.GET("/:catalog/:track", )
 	// r.GET("/:catalog/cover")
 }
