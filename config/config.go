@@ -8,16 +8,33 @@ import (
 
 const configPath = "config.yml"
 
+type BackendEntry struct {
+	Type string `yaml:"type"`
+	Path string `yaml:"path"`
+	Auth string `yaml:"auth"`
+}
+
 type Config struct {
-	Secret   string `yaml:"secret"`
-	Listen   string `yaml:"listen"`
-	RepoRoot string `yaml:"root"`
+	Secret   string         `yaml:"secret"`
+	Listen   string         `yaml:"listen"`
+	Backends []BackendEntry `yaml:"backends"`
 }
 
 var Cfg = Config{
-	Secret:   uuid.NewV4().String(),
-	Listen:   "0.0.0.0:8000",
-	RepoRoot: "repo",
+	Secret: uuid.NewV4().String(),
+	Listen: "0.0.0.0:8000",
+	Backends: []BackendEntry{
+		{
+			Type: "file",
+			Path: "./repo",
+			Auth: "",
+		},
+		{
+			Type: "relay",
+			Path: "http://example.com/",
+			Auth: "a.b.c",
+		},
+	},
 }
 
 func Init() (err error) {
