@@ -14,6 +14,6 @@ For more details about Project Anni, checkout our [organization][anni-org].
 
 ## TODOs:
 
-- [ ] Front end
+- [x] Front end
 - [ ] Download statistics
-- [ ] Support "proxy" upstream servers
+- [x] Support "proxy" upstream servers
