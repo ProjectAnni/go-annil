@@ -11,9 +11,10 @@ For more details about Project Anni, checkout our [organization][anni-org].
 
 - Full implementation of standard Anni Library specification
 - User register and management
+- Support proxy upstream servers
 
 ## TODOs:
 
-- [x] Front end
 - [ ] Download statistics
-- [x] Support "proxy" upstream servers
+- [ ] User manage UI
+- [ ] Relay cache
