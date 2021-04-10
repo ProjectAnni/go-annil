@@ -38,5 +38,8 @@ func Init() error {
 	regAnniEndpoints(r)
 	regUserEndpoints(r)
 
+	// Static files
+	r.NoRoute(serveFrontend)
+
 	return r.Run(config.Cfg.Listen)
 }
